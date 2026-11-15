@@ -9,6 +9,12 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
+# Force UTF-8 on Windows console (prevents UnicodeEncodeError on CI runners)
+if sys.platform == "win32":
+    import io
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 import asyncio
 from core.schema import PlatformType, UnifiedMessage, UnifiedResponse
 from core.security import SecurityManager
