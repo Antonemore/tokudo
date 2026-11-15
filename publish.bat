@@ -50,9 +50,9 @@ git commit -m "%COMMIT_MSG%"
 
 :: 4. Đẩy lên GitHub
 echo.
-echo [3/3] Đang đẩy mã nguồn lên nhánh main của GitHub...
+echo [3/3] Đang đẩy mã nguồn và phiên bản tag lên GitHub...
 git branch -M main
-git push -u origin main
+git push -u origin main --tags
 
 if errorlevel 1 (
     echo.
