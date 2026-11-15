@@ -47,6 +47,7 @@ def build_package():
         ".idea",
         ".vscode",
         "dist",
+        "build",
     }
     exclude_files = {
         ".env",

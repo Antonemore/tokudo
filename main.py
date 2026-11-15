@@ -11,8 +11,22 @@ import sys
 import signal
 import asyncio
 import logging
+import webbrowser
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Ensure UTF-8 console output on Windows
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+# Ensure working directory is application directory when running as frozen binary
+if getattr(sys, "frozen", False):
+    app_dir = Path(sys.executable).parent.resolve()
+    os.chdir(app_dir)
 
 # Load environment configuration (.env)
 load_dotenv()
@@ -121,6 +135,12 @@ async def main() -> None:
 
     logger.info(f"Tokudo Engine online with {len(skill_registry.skills)} active skills.")
     logger.info(f"🌐 Visual Dashboard available at: http://{dash_host}:{dash_port}")
+
+    if os.getenv("AUTO_OPEN_BROWSER", "true").lower() in ("true", "1", "yes"):
+        try:
+            webbrowser.open(f"http://{dash_host}:{dash_port}")
+        except Exception as e:
+            logger.debug(f"Could not automatically open browser: {e}")
 
     # Graceful Shutdown Listener
     stop_event = asyncio.Event()

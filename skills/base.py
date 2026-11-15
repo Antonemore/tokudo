@@ -63,10 +63,16 @@ class SkillRegistry:
     def discover_and_load(self) -> None:
         """Discovers and instantiates all BaseSkill subclasses from the skills directory."""
         logger.info(f"Scanning skills directory: {self.skills_dir}")
-        for py_file in self.skills_dir.glob("*.py"):
-            if py_file.name.startswith("__") or py_file.name == "base.py":
-                continue
-            self._load_module_from_file(py_file)
+        directories = [self.skills_dir]
+        local_dir = Path.cwd() / "skills"
+        if local_dir.resolve() != self.skills_dir.resolve() and local_dir.exists():
+            directories.append(local_dir)
+
+        for d in directories:
+            for py_file in d.glob("*.py"):
+                if py_file.name.startswith("__") or py_file.name == "base.py":
+                    continue
+                self._load_module_from_file(py_file)
 
         logger.info(f"Loaded {len(self.skills)} skills: {list(self.skills.keys())}")
 

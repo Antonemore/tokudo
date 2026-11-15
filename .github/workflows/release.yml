@@ -6,12 +6,9 @@ on:
       - "v*"
 
 jobs:
-  build-release:
-    name: Build & Publish Release Package
+  build-universal:
+    name: Build Universal Source Packages
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -30,15 +27,82 @@ jobs:
       run: |
         python tests/test_smoke.py
 
-    - name: Package Distribution Archive
+    - name: Package Universal Distribution Archives
       run: |
         python package.py
+
+    - name: Upload Universal Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: universal-packages
+        path: |
+          dist/*.zip
+          dist/*.tar.gz
+          dist/*-manifest.txt
+
+  build-windows-exe:
+    name: Build Windows Standalone Executable (.exe)
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies & PyInstaller
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Run Smoke Tests
+      env:
+        PYTHONIOENCODING: utf-8
+      run: |
+        python tests/test_smoke.py
+
+    - name: Compile Tokudo.exe with PyInstaller
+      env:
+        PYTHONIOENCODING: utf-8
+      run: |
+        python build_exe.py
+
+    - name: Upload Windows Executable Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-exe-packages
+        path: |
+          dist/Tokudo.exe
+          dist/*Windows-x64.zip
+
+  publish-release:
+    name: Publish to GitHub Releases
+    needs: [build-universal, build-windows-exe]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist-all
+        merge-multiple: true
+
+    - name: List Release Files
+      run: |
+        ls -la dist-all
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          dist/*.zip
-          dist/*.tar.gz
-          dist/*-manifest.txt
+          dist-all/Tokudo.exe
+          dist-all/*Windows-x64.zip
+          dist-all/*Universal.zip
+          dist-all/*Universal.tar.gz
+          dist-all/*-manifest.txt
         generate_release_notes: true
