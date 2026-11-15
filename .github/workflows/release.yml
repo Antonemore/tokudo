@@ -1,0 +1,43 @@
+name: Release Packaging
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-release:
+    name: Build & Publish Release Package
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Smoke Tests
+      run: |
+        python tests/test_smoke.py
+
+    - name: Package Distribution Archive
+      run: |
+        python package.py
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/*.zip
+          dist/*-manifest.txt
+        generate_release_notes: true
