@@ -1,7 +1,9 @@
 """
 tokudo.package
 Automated Production Packaging Script:
-Bundles the Tokudo AI OS into a clean, distributable release archive (Tokudo-v1.0.0-Windows.zip)
+Bundles the Tokudo AI OS into clean, distributable release archives:
+- Tokudo-v1.0.0-Universal.zip (for Windows & general use)
+- Tokudo-v1.0.0-Universal.tar.gz (for Linux & macOS)
 excluding private tokens, database files, and virtual environment caches.
 """
 
@@ -9,6 +11,7 @@ import os
 import sys
 import shutil
 import zipfile
+import tarfile
 import hashlib
 from pathlib import Path
 
@@ -32,10 +35,10 @@ def build_package():
     dist_dir = root_dir / "dist"
     dist_dir.mkdir(parents=True, exist_ok=True)
 
-    release_name = f"Tokudo-v{__version__}-Windows"
-    archive_path = dist_dir / f"{release_name}.zip"
+    release_base = f"Tokudo-v{__version__}-Universal"
+    zip_path = dist_dir / f"{release_base}.zip"
+    tar_path = dist_dir / f"{release_base}.tar.gz"
 
-    # Files and folders to exclude from distribution
     exclude_dirs = {
         ".venv",
         "venv",
@@ -46,7 +49,7 @@ def build_package():
         "dist",
     }
     exclude_files = {
-        ".env",  # Never bundle real secrets!
+        ".env",
         "index.db",
         "kanban.db",
         "brain_usage.db",
@@ -54,56 +57,65 @@ def build_package():
     exclude_extensions = {".pyc", ".pyd", ".pyo", ".db", ".db-wal", ".db-shm"}
 
     print(f"-> Đang chuẩn bị tệp tin từ: {root_dir}")
-    print(f"-> Đích đóng gói: {archive_path.name}")
 
-    file_count = 0
-    total_uncompressed_bytes = 0
+    # Collect files
+    files_to_pack = []
+    for file_p in root_dir.rglob("*"):
+        parts = file_p.relative_to(root_dir).parts
+        if any(ex in parts for ex in exclude_dirs):
+            continue
 
-    with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for file_p in root_dir.rglob("*"):
-            # Check directory exclusions
-            parts = file_p.relative_to(root_dir).parts
-            if any(ex in parts for ex in exclude_dirs):
+        if file_p.is_file():
+            if file_p.name in exclude_files:
+                continue
+            if file_p.suffix in exclude_extensions:
+                continue
+            if any(p in parts for p in ("screenshots", "tts", "uploads")) and file_p.name != ".gitkeep":
                 continue
 
-            if file_p.is_file():
-                if file_p.name in exclude_files:
-                    continue
-                if file_p.suffix in exclude_extensions:
-                    continue
-                # Skip dynamically generated screenshot/audio/upload artifacts
-                if any(p in parts for p in ("screenshots", "tts", "uploads")) and file_p.name != ".gitkeep":
-                    continue
+            rel_path = file_p.relative_to(root_dir)
+            files_to_pack.append((file_p, rel_path))
 
-                rel_path = file_p.relative_to(root_dir)
-                archive_arcname = Path(release_name) / rel_path
+    # 1. Build ZIP
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file_p, rel_path in files_to_pack:
+            archive_arcname = Path(release_base) / rel_path
+            zipf.write(file_p, arcname=str(archive_arcname))
 
-                zipf.write(file_p, arcname=str(archive_arcname))
-                file_count += 1
-                total_uncompressed_bytes += file_p.stat().st_size
+    # 2. Build TAR.GZ
+    with tarfile.open(tar_path, "w:gz") as tarf:
+        for file_p, rel_path in files_to_pack:
+            archive_arcname = Path(release_base) / rel_path
+            tarf.add(file_p, arcname=str(archive_arcname))
 
-    archive_size_mb = round(archive_path.stat().st_size / (1024 * 1024), 2)
-    sha256_hash = compute_sha256(archive_path)
+    zip_size_mb = round(zip_path.stat().st_size / (1024 * 1024), 2)
+    tar_size_mb = round(tar_path.stat().st_size / (1024 * 1024), 2)
+    zip_hash = compute_sha256(zip_path)
+    tar_hash = compute_sha256(tar_path)
 
-    # Write Release Metadata Manifest
-    manifest_path = dist_dir / f"{release_name}-manifest.txt"
+    # Manifest
+    manifest_path = dist_dir / f"{release_base}-manifest.txt"
     manifest_content = (
         f"TOKUDO AI OS — RELEASE MANIFEST\n"
         f"Version: v{__version__}\n"
         f"Codename: {__codename__}\n"
-        f"Release File: {archive_path.name}\n"
-        f"File Size: {archive_size_mb} MB ({file_count} files)\n"
-        f"SHA-256 Checksum: {sha256_hash}\n"
-        f"Release Date: {sys.version.split()[0]} build\n"
+        f"Files Count: {len(files_to_pack)} clean files\n\n"
+        f"1. ZIP Archive (Windows / All):\n"
+        f"   File: {zip_path.name}\n"
+        f"   Size: {zip_size_mb} MB\n"
+        f"   SHA-256: {zip_hash}\n\n"
+        f"2. TAR.GZ Archive (macOS / Linux):\n"
+        f"   File: {tar_path.name}\n"
+        f"   Size: {tar_size_mb} MB\n"
+        f"   SHA-256: {tar_hash}\n"
     )
     manifest_path.write_text(manifest_content, encoding="utf-8")
 
     print("\n" + "=" * 65)
-    print("🎉 ĐÓNG GÓI PHÁT HÀNH HOÀN TẤT THÀNH CÔNG!")
-    print(f"• Bản phát hành: {archive_path}")
-    print(f"• Dung lượng ZIP: {archive_size_mb} MB ({file_count} tệp tin sạch)")
-    print(f"• Mã băm SHA-256: {sha256_hash}")
-    print(f"• Bảng kê manifest: {manifest_path.name}")
+    print("🎉 ĐÓNG GÓI PHÁT HÀNH ĐA NỀN TẢNG THÀNH CÔNG!")
+    print(f"• Gói ZIP:    {zip_path.name} ({zip_size_mb} MB) - SHA256: {zip_hash[:16]}...")
+    print(f"• Gói TAR.GZ: {tar_path.name} ({tar_size_mb} MB) - SHA256: {tar_hash[:16]}...")
+    print(f"• Bảng kê:    {manifest_path.name}")
     print("=" * 65)
 
 

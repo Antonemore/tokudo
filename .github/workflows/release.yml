@@ -8,7 +8,7 @@ on:
 jobs:
   build-release:
     name: Build & Publish Release Package
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
@@ -39,5 +39,6 @@ jobs:
       with:
         files: |
           dist/*.zip
+          dist/*.tar.gz
           dist/*-manifest.txt
         generate_release_notes: true

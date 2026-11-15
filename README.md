@@ -112,37 +112,50 @@ tokudo/
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Sử Dụng
+## 🚀 Hướng Dẫn Cài Đặt Độc Lập (Cross-Platform Setup)
 
-### 1. Chuẩn Bị Môi Trường
-Yêu cầu: **Python 3.11+** trên Windows 10/11.
+Hệ thống hỗ trợ chạy độc lập trên cả **Windows, macOS và Linux** với kịch bản cài đặt tự động 1-click.
 
-```powershell
-# Tạo môi trường ảo
-python -m venv .venv
-.venv\Scripts\activate
+### 🪟 1. Trên Windows (10 / 11)
+- **Cách 1 (PowerShell Installer):**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File install.ps1
+  ```
+- **Cách 2 (1-Click Launcher):**
+  Nhấp đúp chuột vào file **`start.bat`** (tự động cài đặt nếu chưa có `.venv` và tự bật Web Dashboard `http://localhost:8080`).
 
-# Cài đặt thư viện
-pip install -r requirements.txt
+### 🍏 2. Trên macOS
+Mở Terminal trong thư mục dự án và chạy:
+```bash
+# Cài đặt tự động môi trường và thư viện
+bash install.sh
+
+# Khởi chạy hệ thống và mở Dashboard
+./start.sh
 ```
 
-### 2. Cấu Hình `.env`
+### 🐧 3. Trên Linux (Ubuntu / Debian / Arch / Fedora)
+```bash
+# Cài đặt tự động
+bash install.sh
+
+# Khởi chạy hệ thống
+./start.sh
+
+# Dừng hệ thống khi cần
+./stop.sh
+```
+
+---
+
+### ⚙️ Cấu Hình Môi Trường (.env)
 Sao chép `.env.example` thành `.env` và điền các thông số:
-```powershell
-Copy-Item .env.example .env
-```
-Điền các giá trị chính:
-- `MACHINE_ID`: Tên định danh máy (vd: `PC-WINDOWS-01`)
+- `MACHINE_ID`: Tên định danh máy trạm (vd: `PC-WINDOWS-01`, `MACBOOK-PRO`, `UBUNTU-SERVER`)
 - `TELEGRAM_ALLOWED_USER_ID`: ID Telegram của bạn (Lấy từ @userinfobot)
 - `DISCORD_ALLOWED_USER_ID`: ID Discord của bạn (Bật Developer Mode -> Copy User ID)
 - `TELEGRAM_BOT_TOKEN`: Token lấy từ @BotFather
 - `DISCORD_BOT_TOKEN`: Token Discord Bot từ Developer Portal
-- `OPENAI_API_KEY`: API Key OpenAI hoặc DeepSeek / Local Ollama (hoặc dùng `GEMINI_API_KEY`)
-
-### 3. Khởi Chạy Hệ Thống
-```powershell
-python main.py
-```
+- `GEMINI_API_KEY` hoặc `OPENAI_API_KEY`: Khóa API LLM (hoặc cấu hình trực quan qua Web Dashboard)
 
 ### 4. Các Lệnh Điều Khiển Thường Dùng
 - `/start` hoặc `/help`: Hiển thị hướng dẫn và danh sách tính năng.

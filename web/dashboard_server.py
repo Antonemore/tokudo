@@ -786,7 +786,11 @@ class DashboardServer:
     async def handle_overview(self, request: web.Request) -> web.Response:
         cpu = psutil.cpu_percent(interval=None)
         ram = psutil.virtual_memory()
-        disk = psutil.disk_usage("C:\\")
+        root_path = os.path.abspath(os.sep)
+        try:
+            disk = psutil.disk_usage(root_path)
+        except Exception:
+            disk = psutil.disk_usage(".")
 
         stats = self.engine.brain_router.tracker.get_stats_for_today()
         total_tokens = sum(s.get("total_tokens", 0) for s in stats.values())

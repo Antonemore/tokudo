@@ -140,7 +140,7 @@ async def test_all():
     status_resp = await engine.process_message(msg_status)
     assert status_resp is not None
     assert f"[{engine.machine_id}]" in status_resp.text
-    assert "THÔNG SỐ HỆ THỐNG WINDOWS" in status_resp.text
+    assert "THÔNG SỐ HỆ THỐNG" in status_resp.text
     print(f"  -> Engine /status returned with Machine ID prefix.")
 
     # Test unauthorized message drop
